@@ -15,6 +15,7 @@ pub const DEFAULT_SAMPLE_COUNT: u32 = 1;
 pub struct GpuKey;
 impl SyncAssetKey<Arc<Gpu>> for GpuKey {}
 
+/// Provides access to the most important wgpu objects.
 #[derive(Debug)]
 pub struct Gpu {
     pub surface: Option<wgpu::Surface>,
@@ -27,9 +28,12 @@ pub struct Gpu {
     pub will_be_polled: bool,
 }
 impl Gpu {
+    /// Creates a new [`Gpu`] instance that will draw to the given window, and has default config values.
     pub async fn new(window: Option<&Window>) -> Self {
         Self::with_config(window, false).await
     }
+
+    /// Creates a new [`Gpu`] instance that will draw to the given window, and has the provided config values.
     pub async fn with_config(window: Option<&Window>, will_be_polled: bool) -> Self {
         // From: https://github.com/KhronosGroup/Vulkan-Loader/issues/552
         #[cfg(not(target_os = "unknown"))]
@@ -116,20 +120,29 @@ impl Gpu {
 
         Self { device, surface, queue, swapchain_format, swapchain_mode, adapter, will_be_polled }
     }
+
+    /// Resizes the surface that this [`Gpu`] will draw to.
     pub fn resize(&self, size: winit::dpi::PhysicalSize<u32>) {
         if let Some(surface) = &self.surface {
             surface.configure(&self.device, &self.sc_desc(uvec2(size.width, size.height)));
         }
     }
+
+    /// Returns the swapchain format of this [`Gpu`]. Defaults to [`TextureFormat::Rgba8UnormSrgb`].
     pub fn swapchain_format(&self) -> TextureFormat {
         self.swapchain_format.unwrap_or(TextureFormat::Rgba8UnormSrgb)
     }
+
+    /// Returns the swapchain present mode of this [`Gpu`]. Defaults to [`PresentMode::Immediate`].
     pub fn swapchain_mode(&self) -> PresentMode {
         self.swapchain_mode.unwrap_or(PresentMode::Immediate)
     }
+
+    /// Returns the surface configuration description for this [`Gpu`].
     pub fn sc_desc(&self, size: UVec2) -> wgpu::SurfaceConfiguration {
         Self::create_sc_desc(self.swapchain_format(), self.swapchain_mode(), size)
     }
+
     fn create_sc_desc(format: TextureFormat, present_mode: PresentMode, size: UVec2) -> wgpu::SurfaceConfiguration {
         wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -142,7 +155,9 @@ impl Gpu {
     }
 }
 
+/// This trait is implemented for Rust types that have an equivalent WGSL type.
 pub trait WgslType: Zeroable + Pod + 'static {
+    /// Returns the name of the WGSL equivalent of this type, as a string.
     fn wgsl_type() -> &'static str;
 }
 impl WgslType for f32 {
