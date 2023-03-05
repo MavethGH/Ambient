@@ -5,6 +5,7 @@ use wgpu::{BindGroupLayoutDescriptor, BindGroupLayoutEntry, PipelineLayoutDescri
 
 use super::gpu::{Gpu, GpuKey};
 
+/// An asset key for a [`Blitter`]. Also contains configuration for its corresponding [`Blitter`].
 #[derive(Debug, Clone)]
 pub struct BlitterKey {
     pub format: wgpu::ColorTargetState,
@@ -17,12 +18,14 @@ impl SyncAssetKey<Arc<Blitter>> for BlitterKey {
     }
 }
 
+/// Contains the pipeline and sampler used for blitting textures (setting a region of pixels to a given color).
 pub struct Blitter {
     pipeline: wgpu::RenderPipeline,
     sampler: wgpu::Sampler,
     gpu: Arc<Gpu>,
 }
 impl Blitter {
+    /// Creates a new [`Blitter`].
     pub fn new(gpu: Arc<Gpu>, conf: &BlitterKey) -> Self {
         log::debug!("Creating blitter: {conf:#?}");
         let shader = gpu.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -83,6 +86,8 @@ impl Blitter {
 
         Self { pipeline, sampler, gpu }
     }
+
+    /// Runs the [`Blitter`]. This essentially copies the pixels from `source` to `target`.
     pub fn run(&self, encoder: &mut wgpu::CommandEncoder, source: &wgpu::TextureView, target: &wgpu::TextureView) {
         let bind_group_layout = self.pipeline.get_bind_group_layout(0);
 
