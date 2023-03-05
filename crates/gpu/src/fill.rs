@@ -3,12 +3,11 @@ use std::{borrow::Cow, sync::Arc};
 use ambient_std::asset_cache::{AssetCache, SyncAssetKey, SyncAssetKeyExt};
 use glam::Vec4;
 use wgpu::{
-    util::DeviceExt, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, ShaderStages, TextureViewDimension,
+    util::DeviceExt, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, ShaderStages, TextureViewDimension
 };
 
 use super::{
-    gpu::{Gpu, GpuKey},
-    texture_format_to_wgsl_storage_format,
+    gpu::{Gpu, GpuKey}, texture_format_to_wgsl_storage_format
 };
 
 #[derive(Debug, Clone)]
@@ -21,11 +20,13 @@ impl SyncAssetKey<Arc<Filler>> for FillerKey {
     }
 }
 
+/// Contains the pipeline used for filling a region of an image with a solid color.
 pub struct Filler {
     gpu: Arc<Gpu>,
     pipeline: wgpu::ComputePipeline,
 }
 impl Filler {
+    /// Creates a new [`Filler`].
     pub fn new(gpu: Arc<Gpu>, format: wgpu::TextureFormat) -> Self {
         let shader = format!(
             "
@@ -87,11 +88,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {{
         });
         Self { gpu, pipeline }
     }
+
+    /// Runs the [`Filler`]. This will fill in the pixels of `target` specified by `size` with the solid color `color`.
     pub fn run(&self, target: &wgpu::TextureView, size: wgpu::Extent3d, color: Vec4) {
         let mut encoder = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Filler.run") });
         self.run_with_encoder(&mut encoder, target, size, color);
         self.gpu.queue.submit(Some(encoder.finish()));
     }
+
+    /// As [`run()`], but uses the provided command encoder instead of creating a new one.
+    ///
+    /// Note that this DOES NOT call [`CommandEncoder::finish()`] on the encoder.
     pub fn run_with_encoder(&self, encoder: &mut wgpu::CommandEncoder, target: &wgpu::TextureView, size: wgpu::Extent3d, color: Vec4) {
         #[repr(C)]
         #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]

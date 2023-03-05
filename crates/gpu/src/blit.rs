@@ -18,7 +18,7 @@ impl SyncAssetKey<Arc<Blitter>> for BlitterKey {
     }
 }
 
-/// Contains the pipeline and sampler used for blitting textures (setting a region of pixels to a given color).
+/// Contains the pipeline and sampler used for blitting (copying the pixels from one texture view to another)
 pub struct Blitter {
     pipeline: wgpu::RenderPipeline,
     sampler: wgpu::Sampler,
