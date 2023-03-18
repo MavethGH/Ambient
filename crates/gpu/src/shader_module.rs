@@ -6,16 +6,23 @@ use wgpu::{ComputePipelineDescriptor, DepthBiasState};
 
 use super::gpu::{Gpu, GpuKey, DEFAULT_SAMPLE_COUNT};
 
+/// A literal value in WGSL shader code.
 #[derive(Debug, Clone, PartialEq)]
 pub enum WgslValue {
+    /// String literal.
     String(CowStr),
+    /// Arbitrary data that should be written as-is to a WGSL shader.
     Raw(CowStr),
+    /// Floating-point number literal.
     Float(f32),
+    /// Integer literal.
     Int32(u32),
+    /// Big integer literal.
     Int64(u64),
 }
 
 impl WgslValue {
+    /// Returns this [`WgslValue`] as an integer if it is one, otherwise returns `None`.
     pub fn as_integer(&self) -> Option<u32> {
         match self {
             WgslValue::Int32(v) => Some(*v),
@@ -23,6 +30,7 @@ impl WgslValue {
         }
     }
 
+    /// Converts to a string representation suitable for use in WGSL code.
     fn to_wgsl(&self) -> String {
         match self {
             WgslValue::String(v) => format!("{v:?}"),
@@ -63,25 +71,32 @@ impl From<u64> for WgslValue {
     }
 }
 
+/// An identifier within a shader module.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShaderModuleIdentifier {
+    /// A bind group description
     BindGroup(BindGroupDesc),
+    /// A constant value
     Constant { name: CowStr, value: WgslValue },
 }
 
 impl ShaderModuleIdentifier {
+    /// Creates a new [`ShaderModuleIdentifier`] from a [`BindGroupDesc`].
     pub fn bind_group(desc: BindGroupDesc) -> Self {
         Self::BindGroup(desc)
     }
 
+    /// Creates a new [`ShaderModuleIdentifier`] with the given name and the given value as a [`WgslValue::Raw`].
     pub fn raw(name: impl Into<CowStr>, value: impl Into<CowStr>) -> Self {
         Self::Constant { name: name.into(), value: WgslValue::Raw(value.into()) }
     }
 
+    /// Creates a new [`ShaderModuleIdentifier`] with the given name and the given value.
     pub fn constant(name: impl Into<CowStr>, value: impl Into<WgslValue>) -> Self {
         Self::Constant { name: name.into(), value: value.into() }
     }
 
+    /// Gets the name of this [`ShaderModuleIdentifier`] as a string.
     pub fn name(&self) -> &str {
         match self {
             ShaderModuleIdentifier::BindGroup(v) => &v.label,
@@ -89,6 +104,7 @@ impl ShaderModuleIdentifier {
         }
     }
 
+    /// Returns this [`ShaderModuleIdentifier`] as a [`BindGroupDesc`] if it is one, otherwise returns `None`.
     pub fn as_bind_group(&self) -> Option<&BindGroupDesc> {
         match self {
             ShaderModuleIdentifier::BindGroup(v) => Some(v),
@@ -103,7 +119,7 @@ impl From<BindGroupDesc> for ShaderModuleIdentifier {
     }
 }
 
-/// Defines a part of a shader and it's preprocessed bind groups
+/// Defines a part of a shader and its preprocessed bind groups
 #[derive(Clone, Debug, Default)]
 pub struct ShaderModule {
     pub label: CowStr,
@@ -113,6 +129,7 @@ pub struct ShaderModule {
 }
 
 impl ShaderModule {
+    /// Creates a new [`ShaderModule`]
     pub fn new(label: impl Into<CowStr>, source: impl Into<CowStr>, idents: Vec<ShaderModuleIdentifier>) -> Self {
         Self { label: label.into(), source: source.into(), idents }
     }
