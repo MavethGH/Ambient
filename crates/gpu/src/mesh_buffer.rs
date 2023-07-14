@@ -94,7 +94,7 @@ impl AsyncAssetKey<AssetResult<Arc<GpuMesh>>> for GpuMeshFromUrl {
 /// Groups all *common* mesh attributes into a single struct to reduce the number of bound slots.
 #[repr(C)]
 #[derive(Default, Clone, Copy, Pod, Zeroable)]
-pub struct BaseMesh {
+pub struct BaseMeshAttrs {
     position: Vec4,
     normal: Vec4,
     tangent: Vec4,
@@ -102,9 +102,10 @@ pub struct BaseMesh {
     _padding: Vec2,
 }
 
+/// Contains the attributes that are only relevant to skinned meshes.
 #[repr(C)]
 #[derive(Default, Clone, Copy, Pod, Zeroable)]
-pub struct SkinnedMesh {
+pub struct SkinnedMeshAttrs {
     joint: UVec4,
     weights: Vec4,
 }
@@ -117,10 +118,15 @@ pub struct SkinnedMesh {
 /// from the application, all current GpuMesh.index's are still valid (and the content
 /// of the metadata is just updated at the index).
 pub struct MeshBuffer {
+    /// Contains [`MeshMetadata`]s, each of which corresponds to a mesh, and stores the
+    /// offsets into the other buffers at which the data for that mesh can be found.
     pub metadata_buffer: TypedBuffer<MeshMetadata>,
-    pub base_buffer: AttributeBuffer<BaseMesh>,
-    pub skinned_buffer: AttributeBuffer<SkinnedMesh>,
-
+    /// Stores the attributes that are common to all meshes, which includes positions, normals,
+    /// tangents, and texture coordinates.
+    pub base_buffer: AttributeBuffer<BaseMeshAttrs>,
+    /// Stores the attributes that are only relevant to skinned meshes, which includes joints and weights.
+    pub skinned_buffer: AttributeBuffer<SkinnedMeshAttrs>,
+    /// Stores all the indices for the vertices in all the meshes.
     pub index_buffer: AttributeBuffer<u32>,
     meshes: Vec<Option<InternalMesh>>,
     to_remove: Arc<Mutex<Vec<GpuMeshIndex>>>,
@@ -198,7 +204,7 @@ impl MeshBuffer {
                 .max()
                 .unwrap_or(0);
 
-            let mut data = vec![BaseMesh::default(); len];
+            let mut data = vec![BaseMeshAttrs::default(); len];
 
             pos.iter()
                 .zip(&mut data)
@@ -230,7 +236,7 @@ impl MeshBuffer {
 
             let len = joints.len().max(weights.len());
 
-            let mut data = vec![SkinnedMesh::default(); len];
+            let mut data = vec![SkinnedMeshAttrs::default(); len];
 
             joints
                 .iter()

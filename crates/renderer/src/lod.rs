@@ -17,6 +17,7 @@ use crate::primitives;
 
 /// Maximum number of LOD levels
 pub const MAX_LOD_LEVELS: usize = 16;
+
 #[repr(transparent)]
 /// Represents clip space size cutoffs for the lod levels.
 ///
@@ -47,6 +48,7 @@ components!("rendering", {
     cpu_lod: usize,
     @[Networked, Store]
     cpu_lod_group: (),
+    /// Represents whether a specific lod is visible.
     @[Networked, Store]
     cpu_lod_visible: bool,
     /// Updated by the gpu
@@ -54,6 +56,7 @@ components!("rendering", {
     @[Networked, Store]
     gpu_lod: (),
 });
+
 gpu_components! {
     lod_cutoffs(), gpu_lod() => lod_cutoffs: GpuComponentFormat::Mat4,
     // [lod, 0, 0, 0]

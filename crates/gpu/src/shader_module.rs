@@ -110,12 +110,11 @@ type BindingEntry = (CowStr, BindGroupLayoutEntry);
 ///     As such, it is not possible to get the bind group layout from a single shader module. Prefer to split out and reuse the entries in a separate function
 #[derive(Debug, Default)]
 pub struct ShaderModule {
-    /// The unique name of the shadermodule.
+    /// The unique name of the module.
     pub name: CowStr,
-    /// The wgsl source for the module, *without* dependencies
+    /// The wgsl source for the module, *without* dependencies.
     pub source: CowStr,
-
-    /// Dependencies for the module
+    /// Dependencies for the module.
     pub dependencies: Vec<Arc<ShaderModule>>,
 
     // Use the label to preprocess constants
@@ -134,16 +133,19 @@ impl ShaderModule {
         }
     }
 
+    /// Builder pattern function for adding a [`ShaderIdent`].
     pub fn with_ident(mut self, ident: ShaderIdent) -> Self {
         self.idents.push(ident);
         self
     }
 
+    /// Builder pattern function for adding a [`BindGroupLayoutEntry`].
     pub fn with_binding(mut self, group: impl Into<CowStr>, entry: BindGroupLayoutEntry) -> Self {
         self.bindings.push((group.into(), entry));
         self
     }
 
+    /// Similar to [`with_binding()`], but takes a sequence of bindings.
     pub fn with_bindings(
         mut self,
         bindings: impl IntoIterator<Item = (CowStr, BindGroupLayoutEntry)>,
@@ -152,6 +154,7 @@ impl ShaderModule {
         self
     }
 
+    /// Similar to [`with_binding()`], but takes a [`BindGroupDesc`] and adds all of its entries to the module.
     pub fn with_binding_desc(mut self, desc: BindGroupDesc<'static>) -> Self {
         let group = desc.label.clone();
         self.bindings
@@ -159,11 +162,13 @@ impl ShaderModule {
         self
     }
 
+    /// Builder pattern function for adding another [`ShaderModule`] as a dependency.
     pub fn with_dependency(mut self, module: Arc<ShaderModule>) -> Self {
         self.dependencies.push(module);
         self
     }
 
+    /// Similar to [`with_dependency()`], but takes a sequence of dependencies.
     pub fn with_dependencies(
         mut self,
         modules: impl IntoIterator<Item = Arc<ShaderModule>>,
@@ -172,6 +177,7 @@ impl ShaderModule {
         self
     }
 
+    /// Returns a sanitized version of the name of this module.
     fn sanitized_label(&self) -> String {
         self.name.replace(
             |v: char| !v.is_ascii_alphanumeric() && !"_-.".contains(v),
@@ -183,7 +189,7 @@ impl ShaderModule {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BindGroupDesc<'a> {
     pub entries: Vec<wgpu::BindGroupLayoutEntry>,
-    // Name for group preprocessor
+    /// Name for group preprocessor
     pub label: Cow<'a, str>,
 }
 
@@ -263,7 +269,7 @@ fn resolve_module_graph<'a>(
 /// Represents a shader and its layout
 pub struct Shader {
     module: wgpu::ShaderModule,
-    // Ordered sets
+    /// Ordered sets
     bind_group_layouts: Vec<Arc<wgpu::BindGroupLayout>>,
     label: CowStr,
 }

@@ -81,11 +81,27 @@ impl SyncAssetKey<RendererResources> for RendererResourcesKey {
 }
 
 #[derive(Debug, Clone)]
+/// Configuration for the renderer.
 pub struct RendererConfig {
+    /// The scene this renderer will render.
+    ///
+    /// Defaults to `ui_scene()`.
     pub scene: Component<()>,
+    /// Whether to enable shadows.
+    ///
+    /// Defaults to true.
     pub shadows: bool,
+    /// The resolution of shadow maps. Only applicable if shadows are enabled.
+    ///
+    /// Defaults to 1024.
     pub shadow_map_resolution: u32,
+    /// How many shadow cascades to do.
+    ///
+    /// Defaults to 5.
     pub shadow_cascades: u32,
+    /// A factor to scale lod cutoffs by.
+    ///
+    /// Defaults to 1.0.
     pub lod_cutoff_scaling: f32,
 }
 
@@ -101,8 +117,11 @@ impl Default for RendererConfig {
     }
 }
 
+/// A target for the renderer to render to.
 pub enum RendererTarget<'a> {
+    /// Render to an arbitrary target.
     Target(&'a RenderTarget),
+    /// Just render directly to the screen (used for rendering UI).
     Direct {
         color: &'a TextureView,
         depth: &'a TextureView,
@@ -148,7 +167,8 @@ impl<'a> RendererTarget<'a> {
     }
 }
 
-pub type PostSubmitFunc = Box<dyn FnOnce() + Send + Send>;
+pub type PostSubmitFunc = Box<dyn FnOnce() + Send>;
+/// Implemented by types that contain the data required to render some arbitrary stuff.
 pub trait SubRenderer: std::fmt::Debug + Send + Sync {
     #[allow(clippy::too_many_arguments)]
     fn render<'a>(
@@ -167,7 +187,6 @@ pub struct Renderer {
     pub config: RendererConfig,
     pub shader_debug_params: ShaderDebugParams,
     mesh_meta_layout: Arc<BindGroupLayout>,
-
     culling: Culling,
     pub shadows: Option<ShadowsRenderer>,
     forward_globals: ForwardGlobals,
@@ -307,9 +326,7 @@ impl Renderer {
         let mesh_buffer_h = MeshBufferKey.get(&assets);
         let mesh_buffer = mesh_buffer_h.lock();
 
-        // let mesh_data_bind_group = create_mesh_data_bind_group(world, &self.resources_layout, &mesh_buffer);
-
-        // // A subset used for the collect state
+        // A subset used for the collect state
         let mesh_meta_bind_group =
             create_mesh_meta_bind_group(world, &self.mesh_meta_layout, &mesh_buffer);
 

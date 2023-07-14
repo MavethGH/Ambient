@@ -220,7 +220,7 @@ impl RendererCollect {
     pub fn run(
         &self,
         gpu: &Gpu,
-        assets: &AssetCache,
+        _assets: &AssetCache,
         encoder: &mut wgpu::CommandEncoder,
         _post_submit: &mut Vec<PostSubmitFunc>,
         mesh_meta_bind_group: &wgpu::BindGroup,

@@ -70,6 +70,7 @@ components!("rendering", {
 
     /// The (cpu) primitives are split into an SoA on the gpu side
     gpu_primitives_mesh: [u32; MAX_PRIMITIVE_COUNT],
+    /// The (cpu) primitives are split into an SoA on the gpu side
     gpu_primitives_lod: [u32; MAX_PRIMITIVE_COUNT],
 
     renderer_shader: RendererShaderProducer,
@@ -218,13 +219,16 @@ pub fn get_sun_light_direction(world: &World, scene: Component<()>) -> Vec3 {
 }
 
 #[derive(Clone, Debug)]
+/// Contains the info needed to render a thing.
 pub struct RenderPrimitive {
     pub material: SharedMaterial,
     pub shader: RendererShaderProducer,
     pub mesh: Arc<GpuMesh>,
     pub lod: usize,
 }
+
 pub type PrimitiveIndex = usize;
+
 pub fn get_gpu_primitive_id(
     world: &World,
     id: EntityId,
@@ -295,6 +299,9 @@ pub fn get_defs_module() -> Arc<ShaderModule> {
     Arc::new(ShaderModule::new("defs", iter))
 }
 
+/// Creates a shader module that contains the mesh metadata bind group.
+/// A mesh metadata consists of offsets where each piece of the corresponding
+/// mesh data can be found in their respective buffers.
 pub fn get_mesh_meta_module(bind_group_offset: u32) -> Arc<ShaderModule> {
     Arc::new(
         ShaderModule::new("mesh_meta", include_file!("mesh_meta.wgsl"))
@@ -306,6 +313,8 @@ pub fn get_mesh_meta_module(bind_group_offset: u32) -> Arc<ShaderModule> {
     )
 }
 
+/// Creates a shader module that contains the mesh data bind groups.
+/// This includes the base data (position, normal, tangent, uv), and the skin data.
 pub fn get_mesh_data_module(bind_group_offset: u32) -> Arc<ShaderModule> {
     Arc::new(
         ShaderModule::new("mesh_data", include_file!("mesh_data.wgsl"))
@@ -441,6 +450,8 @@ impl Default for AlphaMode {
     }
 }
 
+/// A [`RendererShader`] has three shader passes, each with their own entry point/main function.
+/// This enum specifies which of them is being referred to.
 #[derive(Debug, Clone, Copy)]
 pub enum FSMain {
     Forward,
@@ -448,6 +459,7 @@ pub enum FSMain {
     Outline,
 }
 
+/// A shader for use by the renderer.
 pub struct RendererShader {
     pub id: String,
     pub shader: Arc<Shader>,
@@ -462,6 +474,7 @@ pub struct RendererShader {
     pub transparency_group: i32,
 }
 impl RendererShader {
+    /// Returns the name of the entry point/main function for each fragment shader stage.
     fn get_fs_main_name(&self, main: FSMain) -> &str {
         match main {
             FSMain::Forward => &self.fs_forward_main,
@@ -478,9 +491,11 @@ impl Debug for RendererShader {
     }
 }
 
+/// A callback that produces a reference to a [`RendererShader`]
 pub type RendererShaderProducer =
     Cb<dyn Fn(&AssetCache, &RendererConfig) -> Arc<RendererShader> + Sync + Send>;
 
+/// A GPU-friendly struct that contains the information required to make 'draw indexed indirect' calls.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct DrawIndexedIndirect {
@@ -501,7 +516,11 @@ fn is_transparent(
         || material.transparent().unwrap_or(shader.transparent)
 }
 
-/// wgpu will throw an exception if the scissor value is outside the viewport
+/// Sets the scissor value after clamping it to the viewport. This is to prevent wgpu from crashing when
+/// given out-of-bounds scissors.
+///
+/// Returns true if the scissor was successfully set, and returns false if it wasn't, which happens if
+/// either the width or the height of the scissor rect is 0.
 pub(crate) fn set_scissors_safe(
     render_pass: &mut wgpu::RenderPass,
     render_target_size: wgpu::Extent3d,
